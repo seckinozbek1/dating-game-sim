@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -3.9 -c \":*)",
+      "Bash(py -3.9 src/main.py --serve)",
+      "WebFetch(domain:doi.org)",
+      "WebSearch",
+      "Bash(gh repo:*)",
+      "Bash(powershell.exe -Command 'where.exe gh')",
+      "Read(//c/Users/secki/AppData/Local/Programs/**)",
+      "Read(//c/Program Files/GitHub CLI//**)",
+      "Bash(echo $PATH)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(powershell.exe -Command \"& ''C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe'' auth status\")"
+    ]
+  }
+}

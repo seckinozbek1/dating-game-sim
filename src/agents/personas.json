@@ -1,0 +1,154 @@
+{
+  "target": {
+    "id": "T",
+    "name": "Vera",
+    "gender": "female",
+    "role": "target",
+    "archetype": "Curator",
+    "big5": {
+      "openness": 85,
+      "conscientiousness": 78,
+      "extraversion": 70,
+      "agreeableness": 62,
+      "neuroticism": 42
+    },
+    "attachment": "secure",
+    "traits": {
+      "kindness": 68,
+      "intelligence": 88,
+      "attractiveness": 82,
+      "status": 75,
+      "humor": 72,
+      "stability": 80
+    },
+    "strategy": "long-term",
+    "bio": "Gallery director who curates contemporary art shows and rarely gives second chances. Values depth over performance. Can spot a rehearsed line from across the bar. Looking for someone who surprises her, not someone who tries to."
+  },
+  "suitors": [
+    {
+      "id": "S1",
+      "name": "Marcus",
+      "gender": "male",
+      "role": "suitor",
+      "archetype": "Architect",
+      "big5": {
+        "openness": 72,
+        "conscientiousness": 82,
+        "extraversion": 65,
+        "agreeableness": 75,
+        "neuroticism": 28
+      },
+      "attachment": "secure",
+      "traits": {
+        "kindness": 80,
+        "intelligence": 82,
+        "attractiveness": 75,
+        "status": 78,
+        "humor": 68,
+        "stability": 88
+      },
+      "strategy": "long-term",
+      "bio": "Structural engineer who designs public spaces. Unhurried and self-contained. Asks one precise question per conversation rather than filling silence with noise. Comfortable with pauses in a way most people aren't."
+    },
+    {
+      "id": "S2",
+      "name": "Theo",
+      "gender": "male",
+      "role": "suitor",
+      "archetype": "Performer",
+      "big5": {
+        "openness": 78,
+        "conscientiousness": 48,
+        "extraversion": 92,
+        "agreeableness": 70,
+        "neuroticism": 78
+      },
+      "attachment": "anxious-preoccupied",
+      "traits": {
+        "kindness": 75,
+        "intelligence": 65,
+        "attractiveness": 88,
+        "status": 55,
+        "humor": 90,
+        "stability": 35
+      },
+      "strategy": "short-term",
+      "bio": "Stand-up comic who uses laughter as both weapon and shield. Brilliant for ten minutes, exhausting by eleven. His need to be liked radiates off him like heat. Has never met a silence he didn't immediately try to fill."
+    },
+    {
+      "id": "S3",
+      "name": "Elliot",
+      "gender": "male",
+      "role": "suitor",
+      "archetype": "Analyst",
+      "big5": {
+        "openness": 90,
+        "conscientiousness": 75,
+        "extraversion": 32,
+        "agreeableness": 42,
+        "neuroticism": 35
+      },
+      "attachment": "dismissive-avoidant",
+      "traits": {
+        "kindness": 50,
+        "intelligence": 95,
+        "attractiveness": 62,
+        "status": 88,
+        "humor": 45,
+        "stability": 72
+      },
+      "strategy": "long-term",
+      "bio": "Quantitative researcher at a hedge fund. Treats every conversation as a data problem to be solved. Emotionally self-sufficient to the point of appearing cold. Finds most people intellectually uninteresting, which he does not bother to hide."
+    },
+    {
+      "id": "S4",
+      "name": "Rafael",
+      "gender": "male",
+      "role": "suitor",
+      "archetype": "Romantic",
+      "big5": {
+        "openness": 82,
+        "conscientiousness": 52,
+        "extraversion": 74,
+        "agreeableness": 82,
+        "neuroticism": 72
+      },
+      "attachment": "anxious-preoccupied",
+      "traits": {
+        "kindness": 90,
+        "intelligence": 68,
+        "attractiveness": 80,
+        "status": 58,
+        "humor": 74,
+        "stability": 38
+      },
+      "strategy": "long-term",
+      "bio": "Pastry chef who falls in love with ideas and people too quickly. Genuinely warm but reads emotional subtext into neutral statements. Has been told he comes on too strong. Means every word he says, which is part of the problem."
+    },
+    {
+      "id": "S5",
+      "name": "Dex",
+      "gender": "male",
+      "role": "suitor",
+      "archetype": "Drifter",
+      "big5": {
+        "openness": 88,
+        "conscientiousness": 38,
+        "extraversion": 60,
+        "agreeableness": 58,
+        "neuroticism": 68
+      },
+      "attachment": "fearful-avoidant",
+      "traits": {
+        "kindness": 65,
+        "intelligence": 75,
+        "attractiveness": 85,
+        "status": 48,
+        "humor": 80,
+        "stability": 30
+      },
+      "strategy": "short-term",
+      "bio": "Travel writer perpetually between apartments and relationships. Magnetic in the first five minutes. Prone to saying something genuinely vulnerable then immediately deflecting with a joke. Sabotages things that start to matter."
+    }
+  ]
+}

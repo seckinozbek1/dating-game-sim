@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Algorithm — 8-bit Dating Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    /* === RESET === */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #050508;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* === SCENE VIEWPORT === */
+    #scene-wrapper {
+      position: relative;
+      width: 800px;
+      height: 480px;
+    }
+
+    #scene {
+      width: 800px;
+      height: 480px;
+      position: relative;
+      background: #0d0d1a;
+      overflow: hidden;
+      cursor: pointer;
+      font-family: 'Press Start 2P', monospace;
+      user-select: none;
+    }
+
+    /* === FLOOR GRID === */
+    #floor-grid {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 148px;
+      background-color: #0a0a18;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(255,255,255,0.04) 23px, rgba(255,255,255,0.04) 24px),
+        repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(255,255,255,0.04) 23px, rgba(255,255,255,0.04) 24px);
+      z-index: 1;
+    }
+
+    /* === CEILING LIGHTS === */
+    #ceiling-lights {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg,
+        rgba(80,0,80,0.5) 0%, rgba(160,0,160,0.6) 20%, rgba(80,0,80,0.3) 40%,
+        rgba(0,60,120,0.4) 60%, rgba(0,40,100,0.6) 80%, rgba(80,0,80,0.5) 100%);
+      z-index: 2;
+    }
+
+    /* === NEON SIGN === */
+    #neon-sign {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      color: #ff55ff;
+      text-shadow: 0 0 6px #ff55ff, 0 0 14px #ff00ff, 0 0 28px #cc00cc;
+      white-space: nowrap;
+      z-index: 10;
+      letter-spacing: 2px;
+      animation: flicker-normal 5s infinite;
+    }
+
+    #neon-sign.fast-flicker { animation: flicker-fast 0.4s infinite; }
+
+    @keyframes flicker-normal {
+      0%,90%,100% { opacity: 1; }
+      91% { opacity: 0.5; }
+      92% { opacity: 1; }
+      94% { opacity: 0.2; }
+      95% { opacity: 0.9; }
+    }
+    @keyframes flicker-fast {
+      0%,100% { opacity: 1; }
+      25% { opacity: 0.2; }
+      50% { opacity: 0.9; }
+      75% { opacity: 0.1; }
+    }
+
+    /* === ENCOUNTER LABEL === */
+    #encounter-label {
+      position: absolute;
+      top: 50px;
+      left: 14px;
+      font-size: 6px;
+      color: #445;
+      z-index: 10;
+      letter-spacing: 1px;
+    }
+
+    /* === SUITOR NAME TAG === */
+    #suitor-tag {
+      position: absolute;
+      top: 50px;
+      right: 14px;
+      font-size: 6px;
+      color: #445;
+      z-index: 10;
+      letter-spacing: 1px;
+      text-align: right;
+    }
+
+    /* === BAR COUNTER === */
+    #bar-counter {
+      position: absolute;
+      bottom: 130px;
+      left: 0;
+      right: 0;
+      height: 44px;
+      background: linear-gradient(180deg, #5a3a28 0%, #3d2418 60%, #2a1810 100%);
+      border-top: 4px solid #9a7828;
+      z-index: 9;
+      transition: border-top-color 0.4s, box-shadow 0.4s;
+    }
+    #bar-counter::before {
+      content: '';
+      position: absolute;
+      top: 4px; left: 0; right: 0; height: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    }
+    #bar-counter::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 3px;
+      background: rgba(0,0,0,0.5);
+    }
+
+    /* === BAR STOOLS (decorative, visible below counter) === */
+    .stool {
+      position: absolute;
+      bottom: 100px;
+      z-index: 4;
+    }
+    .stool::before {
+      content: '';
+      display: block;
+      width: 28px;
+      height: 7px;
+      background: linear-gradient(180deg, #7a5a3a 0%, #5a3a20 100%);
+      border: 1px solid #3a2010;
+      border-radius: 2px 2px 0 0;
+    }
+    .stool::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 30px;
+      background: #3a2010;
+      margin: 0 auto;
+    }
+    #stool-left  { left:  108px; }
+    #stool-right { right: 115px; }
+
+    /* === BAR BOTTLES SVG === */
+    #bar-bottles {
+      position: absolute;
+      bottom: 174px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+    }
+
+    /* === SPRITE CONTAINERS === */
+    .sprite-container {
+      position: absolute;
+      bottom: 170px;
+      z-index: 8;
+    }
+    #suitor-container { left: 96px;  }
+    #vera-container   { right: 103px; }
+
+    #suitor-container svg,
+    #vera-container svg {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* === ENERGY BAR === */
+    #energy-wrap {
+      position: absolute;
+      bottom: 222px;
+      right: 96px;
+      width: 66px;
+      z-index: 11;
+      text-align: center;
+    }
+    #energy-label {
+      font-size: 5px;
+      color: #666;
+      margin-bottom: 2px;
+      letter-spacing: 1px;
+    }
+    #energy-bar-outer {
+      width: 66px;
+      height: 6px;
+      background: #111;
+      border: 1px solid #333;
+    }
+    #energy-bar-inner {
+      height: 100%;
+      background: linear-gradient(90deg, #27ae60 0%, #f1c40f 60%, #e74c3c 100%);
+      background-size: 200% 100%;
+      transition: width 0.8s ease;
+    }
+
+    /* === SPEECH BUBBLES === */
+    .bubble {
+      position: absolute;
+      max-width: 215px;
+      min-width: 70px;
+      background: #12122a;
+      border: 2px solid #ccccee;
+      padding: 9px 11px 9px 11px;
+      font-size: 7px;
+      line-height: 14px;
+      color: #dde;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .bubble.visible { opacity: 1; }
+
+    .bubble-name {
+      font-size: 6px;
+      color: #f1c40f;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    /* Left bubble (suitor) */
+    #suitor-bubble {
+      top: 78px;
+      left: 155px;
+    }
+    #suitor-bubble::before {
+      content: '';
+      position: absolute;
+      left: -9px;
+      top: 10px;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-right: 9px solid #ccccee;
+    }
+    #suitor-bubble::after {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 11px;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      border-right: 7px solid #12122a;
+    }
+
+    /* Right bubble (vera) */
+    #vera-bubble {
+      top: 78px;
+      right: 150px;
+    }
+    #vera-bubble::before {
+      content: '';
+      position: absolute;
+      right: -9px;
+      top: 10px;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 9px solid #ccccee;
+    }
+    #vera-bubble::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: 11px;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      border-left: 7px solid #12122a;
+    }
+
+    /* === THOUGHT BUBBLE === */
+    #thought-bubble {
+      position: absolute;
+      top: 55px;
+      left: 16px;
+      max-width: 195px;
+      background: rgba(8, 8, 22, 0.92);
+      border: 2px dashed #4a4a6a;
+      padding: 8px 10px;
+      font-size: 6px;
+      line-height: 13px;
+      color: #7a7a9a;
+      z-index: 21;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #thought-bubble.visible { opacity: 1; }
+
+    #thought-dots {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    #thought-dots span {
+      color: #4a4a6a;
+      font-size: 10px;
+      animation: dot-blink 0.7s ease-in-out infinite;
+    }
+    #thought-dots span:nth-child(2) { animation-delay: 0.23s; }
+    #thought-dots span:nth-child(3) { animation-delay: 0.46s; }
+    @keyframes dot-blink {
+      0%,100% { opacity: 0.2; }
+      50%      { opacity: 1;   }
+    }
+    #thought-text { color: #8888aa; min-height: 10px; }
+
+    /* Thought bubble cloud pips */
+    #thought-bubble::before {
+      content: '○ ○ ○';
+      position: absolute;
+      bottom: -16px;
+      left: 10px;
+      font-size: 7px;
+      color: #4a4a6a;
+      letter-spacing: 2px;
+    }
+
+    /* === EVENT BANNER === */
+    #event-banner {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      transform: translateY(-50%) translateX(110%);
+      background: rgba(0,0,0,0.88);
+      border-top: 3px solid #f1c40f;
+      border-bottom: 3px solid #f1c40f;
+      padding: 10px 24px;
+      text-align: center;
+      font-size: 14px;
+      color: #f1c40f;
+      text-shadow: 0 0 12px #f1c40f, 0 0 24px #cc9900;
+      z-index: 30;
+      letter-spacing: 4px;
+    }
+    #event-banner.slide-in {
+      animation: banner-sweep 3.2s ease-in-out forwards;
+    }
+    @keyframes banner-sweep {
+      0%   { transform: translateY(-50%) translateX(110%); }
+      12%  { transform: translateY(-50%) translateX(0);    }
+      85%  { transform: translateY(-50%) translateX(0);    }
+      100% { transform: translateY(-50%) translateX(-110%);}
+    }
+
+    /* === REJECTED STAMP === */
+    #rejected-stamp {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-14deg) scale(0);
+      font-size: 26px;
+      color: #e74c3c;
+      border: 5px solid #e74c3c;
+      padding: 8px 18px;
+      opacity: 0;
+      z-index: 40;
+      letter-spacing: 5px;
+      transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), opacity 0.15s;
+      text-shadow: 2px 2px 0 #7a0000;
+      background: rgba(0,0,0,0.7);
+    }
+    #rejected-stamp.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(-14deg) scale(1);
+    }
+
+    /* === AUTOPLAY BUTTON === */
+    #autoplay-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: transparent;
+      border: 1px solid #333;
+      color: #444;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 6px;
+      padding: 5px 8px;
+      cursor: pointer;
+      z-index: 50;
+      letter-spacing: 1px;
+    }
+    #autoplay-btn:hover { border-color: #888; color: #888; }
+    #autoplay-btn.active { border-color: #f1c40f; color: #f1c40f; }
+
+    /* === HINT === */
+    #hint {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 5px;
+      color: #2a2a3a;
+      z-index: 10;
+      animation: hint-pulse 2.5s ease-in-out infinite;
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+    @keyframes hint-pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+    /* === INTRO SCREEN === */
+    #intro-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #0d0d1a;
+      z-index: 100;
+      gap: 18px;
+    }
+    #intro-screen.fade-out {
+      animation: intro-out 0.5s ease-in forwards;
+    }
+    @keyframes intro-out { to { opacity: 0; pointer-events: none; } }
+
+    .intro-title {
+      font-size: 20px;
+      color: #ff55ff;
+      text-shadow: 0 0 10px #ff00ff, 0 0 24px #cc00cc;
+      animation: flicker-normal 3s infinite;
+      letter-spacing: 3px;
+    }
+    .intro-eyecatch {
+      width: 200px;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #ff00ff, transparent);
+      opacity: 0.6;
+    }
+    .intro-sub {
+      font-size: 8px;
+      color: #666;
+      letter-spacing: 5px;
+    }
+    .intro-meta {
+      font-size: 6px;
+      color: #333;
+      letter-spacing: 2px;
+    }
+    .intro-hint {
+      font-size: 7px;
+      color: #f1c40f;
+      animation: hint-pulse 0.9s ease-in-out infinite;
+      margin-top: 16px;
+      letter-spacing: 2px;
+    }
+
+    /* === RESULTS SCREEN === */
+    #results-screen {
+      position: absolute;
+      inset: 0;
+      background: #0d0d1a;
+      display: none;
+      flex-direction: column;
+      z-index: 90;
+      overflow: hidden;
+    }
+    #results-screen.active { display: flex; }
+
+    #results-frame {
+      margin: 14px;
+      border: 4px solid #c8a820;
+      outline: 4px solid #6a5010;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #0d0d1a;
+      box-shadow: inset 0 0 30px rgba(200,168,32,0.06);
+    }
+
+    #results-header {
+      text-align: center;
+      padding: 10px 8px;
+      font-size: 10px;
+      color: #f1c40f;
+      border-bottom: 2px solid #6a5010;
+      letter-spacing: 3px;
+      text-shadow: 0 0 8px #c8a820;
+      flex-shrink: 0;
+    }
+
+    #results-body {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Page 1: Rankings + Gottman */
+    #results-page-1 {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      padding: 0;
+    }
+    .results-col {
+      padding: 14px 16px;
+    }
+    .results-col:first-child {
+      border-right: 1px solid #2a2a1a;
+    }
+    .results-section-title {
+      font-size: 7px;
+      color: #c8a820;
+      margin-bottom: 12px;
+      letter-spacing: 2px;
+    }
+
+    .rank-entry {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 10px;
+      font-size: 6px;
+      color: #aaa;
+    }
+    .rank-num   { width: 12px; color: #c8a820; flex-shrink: 0; }
+    .rank-crown { width: 10px; flex-shrink: 0; color: #f1c40f; }
+    .rank-name  { width: 56px; flex-shrink: 0; }
+    .rank-bar-outer {
+      flex: 1;
+      height: 7px;
+      background: #111;
+      border: 1px solid #2a2a3a;
+    }
+    .rank-bar-inner {
+      height: 100%;
+      background: linear-gradient(90deg, #3a5fa8, #9b59b6);
+      width: 0;
+      transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+    }
+    .rank-bar-inner.gold { background: linear-gradient(90deg, #c8a820, #f1c40f); }
+
+    .gottman-entry {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 9px;
+      font-size: 5px;
+      color: #888;
+    }
+    .gottman-label {
+      width: 76px;
+      line-height: 10px;
+      flex-shrink: 0;
+    }
+    .gottman-bar-outer {
+      flex: 1;
+      height: 7px;
+      background: #111;
+      border: 1px solid #2a2a3a;
+    }
+    .gottman-bar-inner {
+      height: 100%;
+      width: 0;
+      transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+    }
+    .gottman-bar-inner.bad     { background: linear-gradient(90deg, #7a1010, #e74c3c); }
+    .gottman-bar-inner.good    { background: linear-gradient(90deg, #0a5a1a, #27ae60); }
+    .gottman-bar-inner.neutral { background: linear-gradient(90deg, #0a2a5a, #3498db); }
+
+    /* Page 2: Chosen reveal */
+    #results-page-2 {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+    }
+    #results-page-2.active { display: flex; }
+
+    #chosen-heart-label {
+      font-size: 9px;
+      color: #f1c40f;
+      text-align: center;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px #c8a820;
+    }
+    #chosen-sprites-row {
+      display: flex;
+      gap: 48px;
+      align-items: flex-end;
+    }
+    #chosen-heart-icon {
+      font-size: 22px;
+      color: #e74c3c;
+      align-self: center;
+      text-shadow: 0 0 12px #e74c3c;
+      animation: heart-beat 1s ease-in-out infinite;
+    }
+    @keyframes heart-beat {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
+    }
+    #chosen-stats {
+      font-size: 6px;
+      color: #888;
+      text-align: center;
+      line-height: 16px;
+      letter-spacing: 1px;
+    }
+    #chosen-prediction {
+      font-size: 7px;
+      color: #aaa;
+      text-align: center;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    /* Page 3: Scrolling evaluation */
+    #results-page-3 {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: hidden;
+    }
+    #results-page-3.active { display: block; }
+
+    #eval-scroll-wrap {
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    #eval-scroll {
+      padding: 20px 24px;
+      font-size: 6px;
+      color: #8888aa;
+      line-height: 15px;
+      transform: translateY(100%);
+    }
+    #eval-scroll.rolling {
+      animation: credits-roll 28s linear forwards;
+    }
+    @keyframes credits-roll {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(-100%); }
+    }
+
+    /* Results hint */
+    #results-hint {
+      text-align: center;
+      font-size: 5px;
+      color: #2a2a3a;
+      padding: 6px 0;
+      flex-shrink: 0;
+      font-family: 'Press Start 2P', monospace;
+      animation: hint-pulse 2.5s infinite;
+    }
+
+    /* === MISC === */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div id="scene-wrapper">
+<div id="scene">
+
+  <!-- ── INTRO SCREEN ── -->
+  <div id="intro-screen">
+    <div class="intro-eyecatch"></div>
+    <div class="intro-title">THE ALGORITHM</div>
+    <div class="intro-eyecatch"></div>
+    <div class="intro-sub">A DATING SIMULATION</div>
+    <div class="intro-meta">◆ POWERED BY RELATIONSHIP PSYCHOLOGY ◆</div>
+    <div class="intro-hint">▶ PRESS SPACE OR CLICK TO BEGIN</div>
+  </div>
+
+  <!-- ── CEILING LIGHTS ── -->
+  <div id="ceiling-lights"></div>
+
+  <!-- ── NEON SIGN ── -->
+  <div id="neon-sign">★ THE ALGORITHM ★</div>
+
+  <!-- ── ENCOUNTER / SUITOR LABELS ── -->
+  <div id="encounter-label"></div>
+  <div id="suitor-tag"></div>
+
+  <!-- ── THOUGHT BUBBLE ── -->
+  <div id="thought-bubble">
+    <div id="thought-dots"><span>●</span><span>●</span><span>●</span></div>
+    <div id="thought-text"></div>
+  </div>
+
+  <!-- ── SPEECH BUBBLES ── -->
+  <div class="bubble" id="suitor-bubble">
+    <div class="bubble-name" id="suitor-bname"></div>
+    <div id="suitor-btext"></div>
+  </div>
+  <div class="bubble" id="vera-bubble">
+    <div class="bubble-name">VERA</div>
+    <div id="vera-btext"></div>
+  </div>
+
+  <!-- ── BAR BOTTLES ── -->
+  <svg id="bar-bottles" width="220" height="52"
+       xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:174px;left:50%;transform:translateX(-50%);z-index:6;">
+    <!-- Bottle 1: dark green whiskey -->
+    <rect x="0"  y="18" width="12" height="26" fill="#1a4028" rx="1"/>
+    <rect x="3"  y="10" width="6"  height="10" fill="#1a4028" rx="1"/>
+    <rect x="4"  y="7"  width="4"  height="5"  fill="#9a8030"/>
+    <rect x="1"  y="19" width="2"  height="18" fill="rgba(255,255,255,0.12)" rx="1"/>
+    <!-- Bottle 2: brown bourbon -->
+    <rect x="18" y="12" width="13" height="30" fill="#3a2010" rx="1"/>
+    <rect x="21" y="5"  width="7"  height="9"  fill="#3a2010" rx="1"/>
+    <rect x="22" y="3"  width="5"  height="4"  fill="#9a8030"/>
+    <rect x="19" y="13" width="2"  height="22" fill="rgba(255,255,255,0.1)" rx="1"/>
+    <!-- Bottle 3: tall purple gin -->
+    <rect x="38" y="6"  width="10" height="38" fill="#2a1040" rx="1"/>
+    <rect x="40" y="2"  width="6"  height="6"  fill="#2a1040" rx="1"/>
+    <rect x="38" y="7"  width="2"  height="28" fill="rgba(255,255,255,0.12)" rx="1"/>
+    <!-- Glass with liquid -->
+    <polygon points="55,32 67,32 65,44 57,44" fill="rgba(160,210,255,0.25)" stroke="rgba(180,220,255,0.5)" stroke-width="1"/>
+    <polygon points="57,38 65,38 65,44 57,44" fill="rgba(100,180,255,0.2)"/>
+    <!-- Bottle 4: green wine -->
+    <rect x="74" y="14" width="12" height="28" fill="#1a3a18" rx="1"/>
+    <rect x="77" y="7"  width="6"  height="9"  fill="#1a3a18" rx="1"/>
+    <rect x="78" y="5"  width="4"  height="4"  fill="#9a8030"/>
+    <rect x="75" y="15" width="2"  height="20" fill="rgba(255,255,255,0.1)" rx="1"/>
+    <!-- Candle -->
+    <rect x="91" y="28" width="8"  height="16" fill="#e8d890"/>
+    <rect x="93" y="24" width="4"  height="6"  fill="#e8d890"/>
+    <ellipse cx="95" cy="24" rx="2" ry="4" fill="#ff9020" opacity="0.9"/>
+    <ellipse cx="95" cy="22" rx="1" ry="2" fill="#ffee80" opacity="0.8"/>
+  </svg>
+
+  <!-- ── SPRITE CONTAINERS ── -->
+  <div class="sprite-container" id="suitor-container">
+    <svg id="suitor-sprite" xmlns="http://www.w3.org/2000/svg" width="24" height="42"></svg>
+  </div>
+  <div class="sprite-container" id="vera-container">
+    <svg id="vera-sprite" xmlns="http://www.w3.org/2000/svg" width="24" height="42"></svg>
+  </div>
+
+  <!-- ── ENERGY BAR ── -->
+  <div id="energy-wrap">
+    <div id="energy-label">ENERGY</div>
+    <div id="energy-bar-outer">
+      <div id="energy-bar-inner" style="width:100%"></div>
+    </div>
+  </div>
+
+  <!-- ── BAR COUNTER ── -->
+  <div id="bar-counter"></div>
+
+  <!-- ── STOOLS ── -->
+  <div class="stool" id="stool-left"></div>
+  <div class="stool" id="stool-right"></div>
+
+  <!-- ── EVENT BANNER ── -->
+  <div id="event-banner"><span id="event-text"></span></div>
+
+  <!-- ── REJECTED STAMP ── -->
+  <div id="rejected-stamp">REJECTED</div>
+
+  <!-- ── RESULTS SCREEN ── -->
+  <div id="results-screen">
+    <div id="results-frame">
+      <div id="results-header">✦ VERA'S VERDICT ✦</div>
+      <div id="results-body">
+
+        <!-- Page 1 -->
+        <div id="results-page-1">
+          <div class="results-col">
+            <div class="results-section-title">◆ RANKINGS</div>
+            <div id="rankings-list"></div>
+          </div>
+          <div class="results-col">
+            <div class="results-section-title">◆ GOTTMAN ANALYSIS</div>
+            <div id="gottman-list"></div>
+          </div>
+        </div>
+
+        <!-- Page 2 -->
+        <div id="results-page-2">
+          <div id="chosen-heart-label"></div>
+          <div id="chosen-sprites-row">
+            <div id="chosen-sprite-vera"></div>
+            <div id="chosen-heart-icon">♥</div>
+            <div id="chosen-sprite-suitor"></div>
+          </div>
+          <div id="chosen-stats"></div>
+          <div id="chosen-prediction"></div>
+        </div>
+
+        <!-- Page 3 -->
+        <div id="results-page-3">
+          <div id="eval-scroll-wrap">
+            <div id="eval-scroll"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div id="results-hint">— SPACE / CLICK TO CONTINUE —</div>
+  </div>
+
+  <!-- ── AUTOPLAY ── -->
+  <button id="autoplay-btn">▶ AUTO</button>
+
+  <!-- ── HINT ── -->
+  <div id="hint">SPACE / CLICK TO ADVANCE</div>
+
+</div><!-- #scene -->
+</div><!-- #scene-wrapper -->
+
+<script src="data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════════════
+// SPRITE DATA  (8 cols × 14 rows, scale 3 → 24×42 px)
+// Color keys: h=hair  s=skin  e=eye  m=mouth
+//             c=shirt  a=shirt-accent  p=pants  f=feet  x=special
+// ═══════════════════════════════════════════════════════════════
+const SPRITES = {
+  vera: {
+    rows: [
+      '..hhhh..',
+      '.hhhhhh.',
+      '.ssssss.',
+      '.sesess.',   // eyes at col 2,4
+      '.ssssss.',
+      '.ssmsss.',
+      '.cccccc.',
+      'cccccccc',
+      'cccccccc',
+      'cccccccc',
+      '.pppppp.',
+      '.pp..pp.',
+      '.pp..pp.',
+      '.ff..ff.',
+    ],
+    colors: { h:'#1a1a2e', s:'#fdebd0', e:'#5d4e37', m:'#d4696e',
+              c:'#f1c40f', p:'#8B6914', f:'#5d4e37', a:'#ffd166' }
+  },
+  marcus: {  // Architect — steel blue, neat dark hair
+    rows: [
+      '..hhhh..',
+      '.hhhhhh.',
+      '.ssssss.',
+      '.sesess.',
+      '.ssssss.',
+      '.ssmsss.',
+      '.cccccc.',
+      'cccccccc',
+      'cccccccc',
+      'cccccccc',
+      '.pppppp.',
+      '.pp..pp.',
+      '.pp..pp.',
+      '.ff..ff.',
+    ],
+    colors: { h:'#0d0d1a', s:'#fde8c8', e:'#1a1a2e', m:'#c07068',
+              c:'#4a7fcb', a:'#7ab3e8', p:'#2c3e50', f:'#1a252f' }
+  },
+  theo: {    // Performer — amber hair swept, bright amber jacket
+    rows: [
+      'hhhhhh..',
+      'hhhhhh..',
+      '.ssssss.',
+      '.sesess.',
+      '.ssssss.',
+      '.ssmssm.',   // wide smile (2 mouth pixels)
+      '.cccccc.',
+      'cccccccc',
+      'cccccccc',
+      'caaaaacc',   // star accent row
+      '.pppppp.',
+      '.pp..pp.',
+      '.pp..pp.',
+      '.ff..ff.',
+    ],
+    colors: { h:'#f5a623', s:'#fde8c8', e:'#27ae60', m:'#d4696e',
+              c:'#f5a623', a:'#fff176', p:'#5d4e37', f:'#3d2b1f' }
+  },
+  elliot: {  // Analyst — dark hair slicked, purple turtleneck
+    rows: [
+      '.hhhhh..',
+      '.hhhhh..',
+      '.ssssss.',
+      '.sesess.',
+      '.ssssss.',
+      '...ssss.',   // minimal expression
+      'cccccccc',   // turtleneck high collar
+      'cccccccc',
+      'cccccccc',
+      'cccccccc',
+      '.pppppp.',
+      '.pp..pp.',
+      '.pp..pp.',
+      '.ff..ff.',
+    ],
+    colors: { h:'#0d0d1a', s:'#f0e6d2', e:'#6c3483', m:'#a08080',
+              c:'#9b59b6', a:'#c39bd3', p:'#1a1a2e', f:'#0d0d1a' }
+  },
+  rafael: {  // Romantic — full curly dark hair, teal shirt + red heart
+    rows: [
+      'hhhhhhhh',
+      'hhhhhhhh',
+      '.ssssss.',
+      '.sesess.',
+      '.ssssss.',
+      '.ssmsss.',
+      '.cccccc.',
+      'cccccccc',
+      'cccccccc',
+      'cxcccccc',   // heart detail
+      '.pppppp.',
+      '.pp..pp.',
+      '.pp..pp.',
+      '.ff..ff.',
+    ],
+    colors: { h:'#2c1a0e', s:'#fad7a0', e:'#7d5a44', m:'#d4696e',
+              c:'#1abc9c', x:'#e74c3c', p:'#2c3e50', f:'#1a252f' }
+  },
+  dex: {     // Drifter — messy ochre hair, coral shirt, worn jeans
+    rows: [
+      'hhhhh...',
+      '.hhhhh.h',
+      '.ssssss.',
+      '.sesess.',
+      '.ssssss.',
+      '.ssmsss.',
+      '.cccccc.',
+      'cccccccc',
+      'cccccccc',
+      'ccaccccc',   // tear/patch detail
+      '.pppppp.',
+      '.pp..pp.',
+      '.pp..pp.',
+      '.ff..ff.',
+    ],
+    colors: { h:'#8B6914', s:'#f0c27f', e:'#7f8c8d', m:'#c07068',
+              c:'#e74c3c', a:'#f1948a', p:'#4a5568', f:'#2d3748' }
+  }
+};
+
+// Walk-cycle alternate frame (shift leg/feet rows)
+function walkFrame(rows) {
+  const r = [...rows];
+  r[11] = '.ppp.pp.';
+  r[12] = '.pp.ppp.';
+  r[13] = '.fff.ff.';
+  return r;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SVG SPRITE RENDERER
+// ═══════════════════════════════════════════════════════════════
+const NS = 'http://www.w3.org/2000/svg';
+const SCALE = 3;  // 1 pixel → 3 CSS px
+
+function buildSVG(svgEl, rows, colorMap, scale) {
+  scale = scale || SCALE;
+  svgEl.innerHTML = '';
+  const w = rows[0].length * scale;
+  const h = rows.length * scale;
+  svgEl.setAttribute('width',   w);
+  svgEl.setAttribute('height',  h);
+  svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+  rows.forEach(function(row, y) {
+    for (var x = 0; x < row.length; x++) {
+      var ch = row[x];
+      if (ch !== '.' && colorMap[ch]) {
+        var rect = document.createElementNS(NS, 'rect');
+        rect.setAttribute('x',      x * scale);
+        rect.setAttribute('y',      y * scale);
+        rect.setAttribute('width',  scale);
+        rect.setAttribute('height', scale);
+        rect.setAttribute('fill',   colorMap[ch]);
+        svgEl.appendChild(rect);
+      }
+    }
+  });
+}
+
+function renderSuitor(name, walk) {
+  var key  = (name||'marcus').toLowerCase();
+  var sp   = SPRITES[key] || SPRITES.marcus;
+  var rows = walk ? walkFrame(sp.rows) : sp.rows;
+  buildSVG(document.getElementById('suitor-sprite'), rows, sp.colors, SCALE);
+}
+
+function renderVera() {
+  buildSVG(document.getElementById('vera-sprite'), SPRITES.vera.rows, SPRITES.vera.colors, SCALE);
+}
+
+function makeLargeSprite(name, scale) {
+  var key = (name||'vera').toLowerCase();
+  var sp  = SPRITES[key] || SPRITES.vera;
+  var svg = document.createElementNS(NS, 'svg');
+  buildSVG(svg, sp.rows, sp.colors, scale || 5);
+  return svg;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUDIO  (Tone.js — init on first interaction)
+// ═══════════════════════════════════════════════════════════════
+var audioReady = false;
+var blipSynth, arpSynth, sadSynth, jingleSynth;
+
+function initAudio() {
+  if (audioReady) return;
+  audioReady = true;
+  try {
+    Tone.start();
+
+    blipSynth = new Tone.Synth({
+      oscillator: { type: 'square' },
+      envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.01 }
+    }).toDestination();
+    blipSynth.volume.value = -22;
+
+    arpSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: 'square' },
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.3 }
+    }).toDestination();
+    arpSynth.volume.value = -16;
+
+    sadSynth = new Tone.Synth({
+      oscillator: { type: 'sawtooth' },
+      envelope: { attack: 0.08, decay: 0.5, sustain: 0.4, release: 0.8 }
+    }).toDestination();
+    sadSynth.volume.value = -16;
+
+    jingleSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: 'square' },
+      envelope: { attack: 0.01, decay: 0.14, sustain: 0.3, release: 0.4 }
+    }).toDestination();
+    jingleSynth.volume.value = -13;
+  } catch(e) { /* audio unavailable */ }
+}
+
+function playBlip() {
+  if (!audioReady || !blipSynth) return;
+  try {
+    var notes = ['C5','E5','G5'];
+    blipSynth.triggerAttackRelease(notes[Math.floor(Math.random() * 2)], '64n');
+  } catch(e) {}
+}
+
+function playArpeggio() {
+  if (!audioReady || !arpSynth) return;
+  try {
+    ['C4','E4','G4','C5'].forEach(function(n, i) {
+      setTimeout(function() { arpSynth.triggerAttackRelease(n, '8n'); }, i * 130);
+    });
+  } catch(e) {}
+}
+
+function playSadTrombone() {
+  if (!audioReady || !sadSynth) return;
+  try {
+    var seq = [['Bb3',380],['Ab3',380],['F3',380],['Eb3',680]];
+    var t = 0;
+    seq.forEach(function(pair) {
+      (function(note, dur, delay) {
+        setTimeout(function() { sadSynth.triggerAttackRelease(note, '4n'); }, delay);
+      })(pair[0], pair[1], t);
+      t += pair[1] * 0.75;
+    });
+  } catch(e) {}
+}
+
+function playVictoryJingle() {
+  if (!audioReady || !jingleSynth) return;
+  try {
+    var mel = [['C4',0],['E4',140],['G4',280],['C5',420],['G4',560],['E4',660],['C5',840]];
+    mel.forEach(function(pair) {
+      (function(note, delay) {
+        setTimeout(function() { jingleSynth.triggerAttackRelease(note, '8n'); }, delay);
+      })(pair[0], pair[1]);
+    });
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA  (from window.SIMULATION_DATA via data.js)
+// ═══════════════════════════════════════════════════════════════
+var simData     = window.SIMULATION_DATA || null;
+var encounters  = simData ? simData.encounters  || [] : [];
+var rankings    = simData ? simData.rankings    || [] : [];
+var chosen      = simData ? simData.chosen      || null : null;
+var gottman     = simData ? simData.gottman     || {} : {};
+var compatibility = simData ? simData.compatibility || {} : {};
+var evaluation  = simData ? simData.evaluation  || '' : '';
+var targetName  = simData && simData.target ? simData.target.name : 'Vera';
+
+// Check for rejection
+function isRejected(name) {
+  return rankings.some(function(r) { return r.name === name && r.is_rejection === true; });
+}
+
+// Parse a turn into { speaker, thought, dialogue }
+// Handles: analysis field (scripted) OR --- separator (agentic)
+function parseTurn(turn) {
+  var text     = (turn.text || '').trim();
+  var thought  = null;
+  var dialogue = text;
+
+  if (turn.analysis) {
+    var a = turn.analysis;
+    thought  = '[' + (a.label||'') + ']\n' + (a.detail||'');
+    dialogue = text;
+  } else if (text.indexOf('\n---\n') !== -1) {
+    var parts = text.split('\n---\n');
+    thought  = parts[0].trim();
+    dialogue = parts.slice(1).join('\n---\n').trim();
+  }
+
+  // Truncate for display
+  if (dialogue.length > 280) dialogue = dialogue.slice(0, 277) + '...';
+  if (thought && thought.length > 190) thought = thought.slice(0, 187) + '...';
+
+  return { speaker: turn.speaker || '', thought: thought, dialogue: dialogue };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════════════════════════════
+var $introScreen    = document.getElementById('intro-screen');
+var $neonSign       = document.getElementById('neon-sign');
+var $encLabel       = document.getElementById('encounter-label');
+var $suitorTag      = document.getElementById('suitor-tag');
+var $thoughtBubble  = document.getElementById('thought-bubble');
+var $thoughtDots    = document.getElementById('thought-dots');
+var $thoughtText    = document.getElementById('thought-text');
+var $suitorBubble   = document.getElementById('suitor-bubble');
+var $veraBubble     = document.getElementById('vera-bubble');
+var $suitorBname    = document.getElementById('suitor-bname');
+var $suitorBtext    = document.getElementById('suitor-btext');
+var $veraBtext      = document.getElementById('vera-btext');
+var $eventBanner    = document.getElementById('event-banner');
+var $eventText      = document.getElementById('event-text');
+var $rejStamp       = document.getElementById('rejected-stamp');
+var $energyInner    = document.getElementById('energy-bar-inner');
+var $autoBtn        = document.getElementById('autoplay-btn');
+var $resultsScreen  = document.getElementById('results-screen');
+var $suitorContainer = document.getElementById('suitor-container');
+var $veraSprite     = document.getElementById('vera-sprite');
+var $suitorSprite   = document.getElementById('suitor-sprite');
+var $barCounter     = document.getElementById('bar-counter');
+var $scene          = document.getElementById('scene');
+
+// ═══════════════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════════════
+var G = {
+  phase:       'INTRO',    // INTRO | ENCOUNTER | RESULTS
+  encIdx:      0,
+  turnIdx:     0,
+  subPhase:    'IDLE',     // IDLE | WALK_IN | THINKING | TYPING | WALK_OUT | REJECTED
+  typeHandle:  null,       // { iv, el, full }
+  autoPlay:    false,
+  autoTimer:   null,
+  walkTimer:   null,
+  walkToggle:  false,
+  locked:      false,
+  resultsPage: 0,
+};
+
+function scheduleAuto() {
+  clearTimeout(G.autoTimer);
+  if (G.autoPlay) G.autoTimer = setTimeout(advance, 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADVANCE / CLICK
+// ═══════════════════════════════════════════════════════════════
+function advance() {
+  if (!simData) return;
+  initAudio();
+
+  // Skip active typewriter
+  if (G.typeHandle) {
+    clearInterval(G.typeHandle.iv);
+    G.typeHandle.el.textContent = G.typeHandle.full;
+    G.typeHandle = null;
+    scheduleAuto();
+    return;
+  }
+
+  if (G.locked) return;
+
+  if (G.phase === 'INTRO')     { startGame();         return; }
+  if (G.phase === 'ENCOUNTER') { advanceEncounter();  return; }
+  if (G.phase === 'RESULTS')   { advanceResults();    return; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAME START
+// ═══════════════════════════════════════════════════════════════
+function startGame() {
+  $introScreen.classList.add('fade-out');
+  setTimeout(function() { $introScreen.style.display = 'none'; }, 500);
+  renderVera();
+  G.phase = 'ENCOUNTER';
+  G.encIdx = 0;
+  beginEncounter();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENCOUNTER
+// ═══════════════════════════════════════════════════════════════
+function beginEncounter() {
+  if (G.encIdx >= encounters.length) { showResults(); return; }
+
+  var enc    = encounters[G.encIdx];
+  var suitor = enc.suitor || {};
+  G.turnIdx  = 0;
+
+  $encLabel.textContent  = 'ENCOUNTER ' + (G.encIdx + 1) + '/' + encounters.length;
+  $suitorTag.textContent = (suitor.name || '?').toUpperCase() + ' ◆ ' + (suitor.archetype || '').toUpperCase();
+
+  // Energy bar: 1 - fatigue
+  var energy = 1 - (enc.fatigue_at_start || 0);
+  $energyInner.style.width = Math.round(energy * 100) + '%';
+
+  // Procedural event
+  triggerEncounterEvent(G.encIdx);
+
+  // Sprite + walk-in
+  G.subPhase = 'WALK_IN';
+  G.locked   = true;
+  $suitorBname.textContent = (suitor.name || '').toUpperCase();
+  renderSuitor(suitor.name, false);
+
+  $suitorContainer.style.display = 'block';
+  $suitorContainer.style.transition = 'none';
+  $suitorContainer.style.transform  = 'translateX(-260px)';
+  $suitorContainer.style.filter     = '';
+
+  // Start walk frame toggling
+  startWalkFrames(suitor.name);
+
+  // Animate walk-in
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      $suitorContainer.style.transition = 'transform 1.2s ease-out';
+      $suitorContainer.style.transform  = 'translateX(0)';
+    });
+  });
+
+  setTimeout(function() {
+    stopWalkFrames();
+    renderSuitor(suitor.name, false);
+    G.locked   = false;
+    G.subPhase = 'IDLE';
+    beginTurn();
+  }, 1260);
+}
+
+function startWalkFrames(name) {
+  G.walkToggle = false;
+  G.walkTimer  = setInterval(function() {
+    G.walkToggle = !G.walkToggle;
+    renderSuitor(name, G.walkToggle);
+  }, 115);
+}
+
+function stopWalkFrames() {
+  clearInterval(G.walkTimer);
+  G.walkTimer = null;
+}
+
+function beginTurn() {
+  var enc  = encounters[G.encIdx];
+  if (!enc) { endEncounter(); return; }
+  if (G.turnIdx >= enc.conversation.length) { endEncounter(); return; }
+
+  var turn   = enc.conversation[G.turnIdx];
+  var parsed = parseTurn(turn);
+
+  hideBubbles();
+
+  if (parsed.thought) {
+    showThought(parsed.thought, function() {
+      showDialogueLine(parsed.speaker, parsed.dialogue);
+    });
+  } else {
+    showDialogueLine(parsed.speaker, parsed.dialogue);
+  }
+}
+
+function advanceEncounter() {
+  if (G.subPhase === 'THINKING') {
+    // Skip thought → go to dialogue immediately
+    clearThought();
+    var enc    = encounters[G.encIdx];
+    var turn   = enc.conversation[G.turnIdx];
+    var parsed = parseTurn(turn);
+    showDialogueLine(parsed.speaker, parsed.dialogue);
+    return;
+  }
+  if (G.subPhase === 'IDLE') {
+    G.turnIdx++;
+    beginTurn();
+  }
+}
+
+function showThought(text, onDone) {
+  G.subPhase = 'THINKING';
+  $thoughtText.textContent = '';
+  $thoughtDots.style.display = 'flex';
+  $thoughtBubble.classList.add('visible');
+
+  setTimeout(function() {
+    $thoughtDots.style.display = 'none';
+    typewrite($thoughtText, text, function() {
+      G.subPhase = 'IDLE';
+      scheduleAuto();
+      if (onDone) onDone();
+    });
+  }, 850);
+}
+
+function clearThought() {
+  $thoughtBubble.classList.remove('visible');
+  $thoughtText.textContent = '';
+  G.subPhase = 'IDLE';
+}
+
+function showDialogueLine(speaker, text) {
+  G.subPhase = 'TYPING';
+  hideBubbles();
+  clearThought();
+
+  var isVera  = speaker.toLowerCase() === targetName.toLowerCase();
+  var bubble  = isVera ? $veraBubble  : $suitorBubble;
+  var textEl  = isVera ? $veraBtext   : $suitorBtext;
+
+  bubble.classList.add('visible');
+  textEl.textContent = '';
+  typewrite(textEl, text, function() {
+    G.subPhase = 'IDLE';
+    scheduleAuto();
+  });
+}
+
+function hideBubbles() {
+  $suitorBubble.classList.remove('visible');
+  $veraBubble.classList.remove('visible');
+  // Don't clear thought here; clearThought() is called explicitly
+}
+
+function endEncounter() {
+  var suitor = (encounters[G.encIdx] || {}).suitor || {};
+  hideBubbles();
+  clearThought();
+
+  if (isRejected(suitor.name)) {
+    doRejection(suitor.name);
+  } else {
+    doWalkOut(suitor.name);
+  }
+}
+
+function doWalkOut(name) {
+  G.subPhase = 'WALK_OUT';
+  G.locked   = true;
+
+  startWalkFrames(name);
+  $suitorContainer.style.transition = 'transform 0.9s ease-in';
+  $suitorContainer.style.transform  = 'translateX(-270px)';
+
+  setTimeout(function() {
+    stopWalkFrames();
+    $suitorContainer.style.display = 'none';
+    G.locked = false;
+    G.encIdx++;
+    beginEncounter();
+  }, 950);
+}
+
+function doRejection(name) {
+  G.subPhase = 'REJECTED';
+  G.locked   = true;
+
+  // Vera turns away
+  $veraSprite.style.transform = 'scaleX(-1)';
+  $veraSprite.style.transition = 'transform 0.3s';
+
+  // Suitor sad exit
+  startWalkFrames(name);
+  $suitorContainer.style.transition = 'transform 1.4s ease-in, filter 1.4s';
+  $suitorContainer.style.transform  = 'translateX(-270px)';
+  $suitorContainer.style.filter     = 'grayscale(70%) brightness(0.6)';
+
+  // Stamp
+  setTimeout(function() {
+    $rejStamp.classList.add('show');
+    playSadTrombone();
+  }, 320);
+
+  setTimeout(function() {
+    $rejStamp.classList.remove('show');
+  }, 2000);
+
+  setTimeout(function() {
+    stopWalkFrames();
+    $suitorContainer.style.display = 'none';
+    $veraSprite.style.transform    = '';
+    G.locked = false;
+    G.encIdx++;
+    beginEncounter();
+  }, 2600);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TYPEWRITER
+// ═══════════════════════════════════════════════════════════════
+function typewrite(el, text, onDone) {
+  if (G.typeHandle) {
+    clearInterval(G.typeHandle.iv);
+    G.typeHandle = null;
+  }
+  var i = 0;
+  el.textContent = '';
+  var iv = setInterval(function() {
+    if (i < text.length) {
+      el.textContent += text[i];
+      if (i % 3 === 0) playBlip();  // blip every 3 chars
+      i++;
+    } else {
+      clearInterval(iv);
+      G.typeHandle = null;
+      if (onDone) onDone();
+    }
+  }, 28);
+  G.typeHandle = { iv: iv, el: el, full: text };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROCEDURAL EVENTS
+// ═══════════════════════════════════════════════════════════════
+var EVENT_DEFS = [
+  null,
+  { text: '★ LAST CALL ★',      effect: 'amber'   },
+  { text: '♪ LIVE MUSIC ♪',     effect: 'flicker' },
+  { text: '★ LAST CALL ★',      effect: 'amber'   },
+  null,
+];
+
+function triggerEncounterEvent(idx) {
+  var evt = EVENT_DEFS[idx] || null;
+  if (!evt) return;
+
+  setTimeout(function() {
+    $eventText.textContent = evt.text;
+    $eventBanner.classList.remove('slide-in');
+    void $eventBanner.offsetWidth; // reflow
+    $eventBanner.classList.add('slide-in');
+
+    if (evt.effect === 'flicker') {
+      $neonSign.classList.add('fast-flicker');
+      setTimeout(function() { $neonSign.classList.remove('fast-flicker'); }, 3000);
+    }
+    if (evt.effect === 'amber') {
+      $barCounter.style.borderTopColor = '#f5a623';
+      $barCounter.style.boxShadow      = '0 -6px 24px rgba(245,166,35,0.25)';
+      setTimeout(function() {
+        $barCounter.style.borderTopColor = '';
+        $barCounter.style.boxShadow      = '';
+      }, 3200);
+    }
+
+    setTimeout(function() { $eventBanner.classList.remove('slide-in'); }, 3300);
+  }, 600);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESULTS SCREEN
+// ═══════════════════════════════════════════════════════════════
+function showResults() {
+  G.phase = 'RESULTS';
+  G.resultsPage = 0;
+  $suitorContainer.style.display = 'none';
+  hideBubbles();
+  clearThought();
+  $encLabel.textContent  = '';
+  $suitorTag.textContent = '';
+
+  buildRankings();
+  buildGottman();
+  buildChosenReveal();
+  buildEvaluation();
+
+  $resultsScreen.classList.add('active');
+
+  // Animate stat bars after a brief delay
+  setTimeout(animateBars, 400);
+  scheduleAuto();
+}
+
+function buildRankings() {
+  var list = document.getElementById('rankings-list');
+  list.innerHTML = '';
+  var BAR_WIDTHS = [90, 74, 57, 40, 23]; // rank 1-5
+
+  var source = rankings.length > 0 ? rankings : encounters.map(function(enc, i) {
+    return { rank: i + 1, name: enc.suitor.name, reaction: '' };
+  });
+
+  source.forEach(function(r) {
+    var rank  = r.rank || 1;
+    var w     = BAR_WIDTHS[rank - 1] || 20;
+    var crown = rank === 1 ? '♥' : '·';
+    var entry = document.createElement('div');
+    entry.className = 'rank-entry';
+    entry.innerHTML =
+      '<span class="rank-num">' + rank + '.</span>' +
+      '<span class="rank-crown">' + crown + '</span>' +
+      '<span class="rank-name">' + (r.name || '?').toUpperCase().slice(0,7) + '</span>' +
+      '<div class="rank-bar-outer"><div class="rank-bar-inner' + (rank === 1 ? ' gold' : '') + '" data-width="' + w + '%" style="width:0"></div></div>';
+    list.appendChild(entry);
+  });
+}
+
+function buildGottman() {
+  var list = document.getElementById('gottman-list');
+  list.innerHTML = '';
+  var fh      = gottman.four_horsemen || {};
+  var stab    = gottman.stability_score || 0;
+  var ratio   = gottman.positive_negative_ratio || 0;
+
+  var items = [
+    { label: 'CONTEMPT',   val: (fh.contempt      || 0) * 100, type: 'bad'     },
+    { label: 'CRITICISM',  val: (fh.criticism     || 0) * 100, type: 'bad'     },
+    { label: 'DEFENSIVE',  val: (fh.defensiveness || 0) * 100, type: 'bad'     },
+    { label: 'STONEWALL',  val: (fh.stonewalling  || 0) * 100, type: 'bad'     },
+    { label: 'POS/NEG',    val: Math.min((ratio / 6) * 100, 100), type: 'neutral'},
+    { label: 'STABILITY',  val: stab,                           type: 'good'    },
+  ];
+
+  items.forEach(function(item) {
+    var entry = document.createElement('div');
+    entry.className = 'gottman-entry';
+    entry.innerHTML =
+      '<span class="gottman-label">' + item.label + '</span>' +
+      '<div class="gottman-bar-outer"><div class="gottman-bar-inner ' + item.type +
+      '" data-width="' + item.val.toFixed(0) + '%" style="width:0"></div></div>';
+    list.appendChild(entry);
+  });
+}
+
+function animateBars() {
+  var bars = document.querySelectorAll('[data-width]');
+  bars.forEach(function(el, i) {
+    setTimeout(function() { el.style.width = el.dataset.width; }, i * 80);
+  });
+}
+
+function buildChosenReveal() {
+  var name  = chosen ? chosen.name : null;
+  var label = document.getElementById('chosen-heart-label');
+  var stats = document.getElementById('chosen-stats');
+  var pred  = document.getElementById('chosen-prediction');
+  var vSprite = document.getElementById('chosen-sprite-vera');
+  var sSprite = document.getElementById('chosen-sprite-suitor');
+
+  if (!name) {
+    label.textContent = '— NO SELECTION MADE —';
+    return;
+  }
+
+  label.textContent = '♥ VERA CHOOSES: ' + name.toUpperCase() + ' ♥';
+
+  vSprite.innerHTML = '';
+  sSprite.innerHTML = '';
+  vSprite.appendChild(makeLargeSprite('vera', 5));
+  sSprite.appendChild(makeLargeSprite(name,   5));
+
+  var compat  = compatibility.overall;
+  var compatStr = compat != null ? Math.round(compat * 100) + '%' : '—';
+  stats.textContent   = 'COMPATIBILITY: ' + compatStr;
+  pred.textContent    = (gottman.prediction || '').toUpperCase();
+}
+
+function buildEvaluation() {
+  var el      = document.getElementById('eval-scroll');
+  var cleaned = evaluation.replace(/\*\*(.*?)\*\*/g, '$1').trim();
+  el.textContent = cleaned || 'No evaluation data available.';
+}
+
+function advanceResults() {
+  G.resultsPage++;
+  var p1 = document.getElementById('results-page-1');
+  var p2 = document.getElementById('results-page-2');
+  var p3 = document.getElementById('results-page-3');
+
+  if (G.resultsPage === 1) {
+    p1.style.display = 'none';
+    p2.classList.add('active');
+    playVictoryJingle();
+  } else if (G.resultsPage === 2) {
+    p2.classList.remove('active');
+    p3.classList.add('active');
+    var scrollEl = document.getElementById('eval-scroll');
+    scrollEl.classList.remove('rolling');
+    void scrollEl.offsetWidth;
+    scrollEl.classList.add('rolling');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  if (e.code === 'Space') { e.preventDefault(); advance(); }
+});
+
+$scene.addEventListener('click', function(e) {
+  if (e.target === $autoBtn || $autoBtn.contains(e.target)) return;
+  advance();
+});
+
+$autoBtn.addEventListener('click', function(e) {
+  e.stopPropagation();
+  G.autoPlay = !G.autoPlay;
+  $autoBtn.classList.toggle('active', G.autoPlay);
+  $autoBtn.textContent = G.autoPlay ? '⏸ AUTO' : '▶ AUTO';
+  if (G.autoPlay && G.subPhase === 'IDLE') {
+    scheduleAuto();
+  } else {
+    clearTimeout(G.autoTimer);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+(function init() {
+  if (!simData) {
+    $introScreen.innerHTML =
+      '<div class="intro-title" style="font-size:13px;color:#e74c3c;">NO DATA</div>' +
+      '<div class="intro-sub" style="margin-top:12px;">Load data.js alongside this file.</div>' +
+      '<div class="intro-meta" style="margin-top:8px;">py -3.9 src/main.py --annotate</div>';
+    return;
+  }
+  // Render Vera so she is visible on intro screen behind overlay
+  renderVera();
+})();
+</script>
+</body>
+</html>
